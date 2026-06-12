@@ -1,24 +1,44 @@
-from src.main import add
 import pytest
+from src.main import add
 
-def test_add():
-  assert add(7, 2) == 9
-  assert add(5, "2", 3) == "error"
-  assert add("2", "8.2") == "error"
-  assert add("8", "1", 3.6) == 84
-  assert add("1", "2") == 12
-  assert add("3", "4", "5") == 39
-  assert add(2.6, "4", None) == "error"
-  assert add(2.5, 3, "5.1") == "error"
-  assert add(5.4, 9.8) == 15
-  assert add("1.4", "2", 3) == "error"
-  assert add(2.5, 3, "x") == "error"
-  assert add(2.1, 9.3, 3.7) == 14
-  assert add(1, 6, 3) == 10
-  assert add(1.6, 2.1) == 3
-  assert add(3.1, 2) == 5
-  assert add(1.9, 4.3, "2.6") == "error"
-  assert add("1", "2", 9) == 21
-  assert add("4", "2.4", 1) == "error"
-  assert add(None, 3, "5.1") == "error"
-  assert add("b", 4, 5) == "error"
+# --- 型チェックのテスト ---
+@pytest.mark.parametrize("a,b,c,expected", [
+    (1, 2, 3, 6),            # 正常ケース
+    (1.5, 2.5, 3.0, 7.0),    # 小数もOK
+    ("1", 2, 3, -1),         # aが非数値型
+    (1, "2", 3, -1),         # bが非数値型
+    (1, 2, "3", -1),         # cが非数値型
+    (None, 2, 3, -1),        # Noneは非数値型
+    ("x", "y", "z", -1),     # 全て非数値型
+])
+def test_type_check(a, b, c, expected):
+    assert add(a, b, c) == expected
+
+
+# --- 境界値チェックのテスト ---
+@pytest.mark.parametrize("a,b,c,expected", [
+    (0, 0, 0, 0),            # 下限境界
+    (10, 10, 10, 30),        # 上限境界
+    (-1, 5, 5, -2),          # aが範囲外
+    (5, 11, 5, -2),          # bが範囲外
+    (5, 5, 12, -2),          # cが範囲外
+])
+def test_boundary_check(a, b, c, expected):
+    assert add(a, b, c) == expected
+
+
+# --- 型と境界の複合テスト ---
+@pytest.mark.parametrize("a,b,c,expected", [
+    ("1", 5, 5, -1),         # 型エラー優先
+    (11, "2", 3, -1),        # 型エラー優先
+    (11, 2, 3, -2),          # 型OKだが範囲外
+])
+def test_combined_check(a, b, c, expected):
+    assert add(a, b, c) == expected
+
+
+# --- オプション引数なしのテスト ---
+def test_default_c():
+    assert add(3, 4) == 7
+    assert add(10, 0) == 10
+    assert add(11, 0) == -2
